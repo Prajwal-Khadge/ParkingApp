@@ -1,0 +1,23 @@
+<div>
+    <div class="container">
+        <div>
+            {{ text }}
+
+            <agm-map [latitude]="lat" [longitude]="long" [zoom]="15.9" *ngIf="flag==true">
+
+                <!--Agm-marker goes in here-->               
+                <agm-marker [latitude]="userLatitude" [longitude]="userLongitude"> 
+                </agm-marker>
+
+            </agm-map> 
+        </div>
+        <div>
+            <div class="btn btn-primary">Confirm</div>
+            <div class="btn btn-primary">Remove Marker</div>
+        </div>
+    </div>
+</div>
+
+
+
+
