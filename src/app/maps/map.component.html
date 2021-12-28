@@ -6,17 +6,18 @@
             <agm-map [latitude]="lat" [longitude]="long" [zoom]="15.9" *ngIf="flag==true">
 
                 <!--Agm-marker goes in here-->               
-                <agm-marker [latitude]="userLatitude" [longitude]="userLongitude"> 
+                <agm-marker [latitude]="i.centerX.$numberDecimal" [longitude]="i.centerY.$numberDecimal" *ngFor="let i of markers">
                 </agm-marker>
 
             </agm-map> 
         </div>
         <div>
-            <div class="btn btn-primary">Confirm</div>
-            <div class="btn btn-primary">Remove Marker</div>
+            <div class="btn btn-primary" (click)="verifyParkingZone()">Confirm parking here</div>
+            <div class="btn btn-primary"(click)="showMarkers()">Remove Marker</div>
         </div>
     </div>
 </div>
+
 
 
 
