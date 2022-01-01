@@ -1,11 +1,13 @@
 import { Location } from './../location.model';
 import { MapService } from './../map.service';
-import { Component, OnInit } from "@angular/core";
+import { Component, OnDestroy, OnInit } from "@angular/core";
 import { AgmMap, GoogleMapsAPIWrapper, MapsAPILoader } from "@agm/core";
 import { AgmCoreModule } from '@agm/core';
 import { Variable } from "@angular/compiler/src/render3/r3_ast";
 
 import { Subscription } from 'rxjs';
+import { resolve } from 'dns';
+import { rejects } from 'assert';
 
 @Component({
   selector: 'app-map',
@@ -13,19 +15,18 @@ import { Subscription } from 'rxjs';
   styleUrls: ['./map.component.css']
 })
 
-export class MapComponent implements OnInit {
+export class MapComponent implements OnInit, OnDestroy {
   text = 'Parking App';
   
   lat=32.5288594036806343;
   long=-92.07093364324432;
   flag=true; //User location validation 
   location=0;
-  userLatitude: any;
-  userLongitude: any;
-
+ 
+  //Variables used for marker logic
   markers: any =[];
   private markerSub: Subscription = new Subscription;
- 
+  parkingID: string = "";
 
   ulmArea={
     x1: 32.531512,  
@@ -39,7 +40,7 @@ export class MapComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    console.log(this.flag);
+
     //Get marker data from server  
     this.mapService.getMarkers();
 
@@ -49,57 +50,45 @@ export class MapComponent implements OnInit {
       });
   }
 
-  showMarkers(){
-    
+  ngOnDestroy(): void{
+    this.markerSub.unsubscribe();
+  }
+  //Records last clicked record
+  logLocation(_id: string, index: number){
+    this.parkingID = _id;
   }
 
-   //Get user location
-  getUserLocation(){
-    navigator.geolocation.getCurrentPosition((position) => {
-      this.userLatitude = position.coords.latitude;
-      this.userLongitude = position.coords.longitude; 
+  //Send parking request to the server
+  park(){
+    //Get user location to pass it on
+    //Using promise to finish async methods first
+    var promise = new Promise((resolve, rejects) => {
+      var userLatitude;
+      var userLongitude;
 
-      //Verify user location
-      // const totalDistance = this.calculateDistance(this.ulmArea.x1, this.ulmArea.y1, this.ulmArea.x2, this.ulmArea.y2);
-      // const userDistance = this.calculateDistance(this.ulmArea.x1, this.ulmArea.y1, this.userLatitude, this.userLongitude);
-      
-      // if(userDistance > totalDistance){
-      //   this.flag=false;
-      // }     
-      
+      //Getting user location from Google maps API
+      navigator.geolocation.getCurrentPosition((position) => {
+        userLatitude = position.coords.latitude;
+        userLongitude = position.coords.longitude;
+        
+        //Resolving promise
+        resolve({userLatitude, userLongitude});
+      });
     });
-   }
 
-
-   //Calculates distance
-  //  calculateDistance(lat1: number , lon1: number , lat2: number, lon2: number) {
-  //   if ((lat1 == lat2) && (lon1 == lon2)) {
-  //     return 0;
-  //   }
-  //   else {
-  //     var radlat1 = Math.PI * lat1/180;
-  //     var radlat2 = Math.PI * lat2/180;
-  //     var theta = lon1-lon2;
-  //     var radtheta = Math.PI * theta/180;
-  //     var dist = Math.sin(radlat1) * Math.sin(radlat2) + Math.cos(radlat1) * Math.cos(radlat2) * Math.cos(radtheta);
-  //     if (dist > 1) {
-  //       dist = 1;
-  //     }
-  //     dist = Math.acos(dist);
-  //     dist = dist * 180/Math.PI;
-  //     dist = dist * 60 * 1.1515;
-  //     dist = dist * 1.609344; //Converting to kilometers
-  //     return dist;
-  //   }
-  // }
-  
-  verifyParkingZone(): void{
-    this.getUserLocation();
-    this.mapService.verifyLocation(this.userLatitude, this.userLongitude);
+    //Checking if async operation is completed
+    promise.then((promiseReturned: any) =>{
+      this.mapService.parkRequest(this.parkingID, promiseReturned);
+    });
   }
   
-
 }
 
 
-
+//Verify user location
+   // const totalDistance = this.calculateDistance(this.ulmArea.x1, this.ulmArea.y1, this.ulmArea.x2, this.ulmArea.y2);
+   // const userDistance = this.calculateDistance(this.ulmArea.x1, this.ulmArea.y1, this.userLatitude, this.userLongitude);
+   
+   // if(userDistance > totalDistance){
+   //   this.flag=false;
+   // } 

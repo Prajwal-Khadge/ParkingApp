@@ -20,7 +20,7 @@ export class MapService {
       lat: userLatitude,
       lon: userLongitude
     }
-
+    //Sending user location
     this.http.post<{a: string, b: string}>("http://localhost:3000/verifyLocation", location)
     .subscribe(result =>{
       const a = result;
@@ -30,29 +30,53 @@ export class MapService {
   }    
 
   //It returns an object of type string and array containing object of following type
-  //data: [{id: string, name: string, a: Decimal128, b: Decimal128, c: number, d: number}]
   getMarkers(){
-
-    this.http.get<{data: Location[]}>("http://localhost:3000/").pipe(map(temp =>{
-      return temp.data.map(temp1 => {
-        return{
-          id: temp1.id,
-          name: temp1.name,
-          centerX: temp1.centerX,
-          centerY: temp1.centerY,
-          numOfParkingUsed: temp1.numOfParkingUsed,
-          totalParkingCapacity: temp1.totalParkingCapacity
+   this.http.get<{data: Location[]}>("http://localhost:3000/").pipe(map(temp =>{
+     return temp.data.map(result => {
+       return{
+         id: result._id,
+         name: result.name,
+         centerX: result.centerX,
+         centerY: result.centerY,
+         numOfParkingUsed: result.numOfParkingUsed,
+         totalParkingCapacity: result.totalParkingCapacity
         };
       });
     }))
-    .subscribe(result => {
-      this.markers = result;
+    .subscribe(transformedResult => {
+      this.markers = transformedResult;
       this.markersRecieved.next([...this.markers]);
 
     });
   }
 
+  //Emitting observable containing array
   getMarkerSentListener(){
     return this.markersRecieved.asObservable();
   }
-}
+
+
+
+  //Parking request by user
+  parkRequest(parkingID: string, userLocation: object){
+    //Send parking request to server
+    //For dev process
+    userLocation ={
+      userLatitude: 32.52743442439571, 
+      userLongitude: -92.07754440511565
+    };
+
+    // userLocation = {
+    //   userLatidue: 0,
+    //   userLongitude: 0
+    // };
+    this.http.post<{message: string, numOfParkingUsed: number}>("http://localhost:3000/parkRequest/" + parkingID, userLocation)
+    .subscribe((message) => {
+      console.log(message.message, message.numOfParkingUsed);
+    });
+  }    
+  }
+
+
+
+

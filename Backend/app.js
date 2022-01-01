@@ -1,12 +1,13 @@
+//Express declarations
 const express = require('express');
 const bodyParser = require("body-parser");
 
+
+//Mongoose declarations
 const mongoose = require('mongoose');
 const Location = require('./models/location');
 
-const { basename } = require('path/posix');
-
-//create server
+//create server i.e initialize server
 const app = express();
 
 //Connect to mongoose which returns a promise
@@ -33,9 +34,9 @@ app.use((req, res, next) => {
 });
 
 
-//Return markers
+//Return data for markers
 app.get("/", (req, res, next) => {
- Location.find().then(results => {
+ Location.find({}, '_id name centerX centerY numOfParkingUsed totalParkingCapacity').then(results => {
     res.send({
         data: results
     });
@@ -43,33 +44,71 @@ app.get("/", (req, res, next) => {
 });
 
 
-app.post("/verifyLocation/:location", (req, res, next) => {
+
+//Handles requests for parking
+app.post("/parkRequest/:id", (req, res, next) =>{
+  
+  //Parking ID
+  const parkingID = req.params.id;
+
+  //temp has userLatitude and userLongitude
+  location = req.body;
+
+  //use parkingID to find necessary data
+  //Returns a promise so .then is used with takes a function
+  var promise = new Promise((resolve, rejects) => {
+    Location.findById(parkingID, 'distance centerX centerY numOfParkingUsed totalParkingCapacity').then(results => {
+      resolve(results);
+    });
+  });
+
+  
+  //After we get the promise results
+  promise.then(promiseReturned =>{
+   
+    //Distance of user to the center
+    const userDistance = calculateDistance(location.userLatitude, location.userLongitude, promiseReturned.centerX, promiseReturned.centerY);
     
-  ////////////////////////////////  
-    const data = new Location({
-      name: 'Activity center',
-      radius: 0.0381,
-      centerX: 32.529943098278494,           
-      centerY: -92.068317855001371,
-      numOfParkingUsed: 0,
-      totalParkingCapacity: 20  
-    });
+    numOfParkingUsed = promiseReturned.numOfParkingUsed;
 
-    //compare location to database to say u can park
-    res.send({
-        a: "apple",
-        b: "ball"
-    });
-});
+    if(userDistance<=promiseReturned.distance){
+      //If success condition
+      if(numOfParkingUsed<promiseReturned.totalParkingCapacity){
+        //Updating database also async function so using promise
+        var updatePromise = new Promise((resolve, rejects) => {
+          Location.findByIdAndUpdate(parkingID, {numOfParkingUsed: numOfParkingUsed+1}).then(results =>{
+            resolve(results);
+          });
+        });
 
- //testing
- app.get("/verifyLocation", (req, res, next) => {
-  res.status(200).json({
-      message: 'Post added successfully'
+        //Getting result after query is completely executed
+        updatePromise.then(updated =>{
+          res.send({
+            message: "Success",
+            numOfParkingUsed: numOfParkingUsed + 1
+          });
+        });  
+      }
+      else{
+        res.send({
+          message: "Parking Full",
+          numOfParkingUsed: numOfParkingUsed
+        });
+      };
+    }
+    else{
+      //Fail condition
+      res.send({
+        message: "Move close to a parking zone",
+        numOfParkingUsed: numOfParkingUsed
+      });
+    }
   });
 });
 
-//Calculate distance
+
+
+//Calculate distance between two points on a sphere
 function calculateDistance(lat1, lon1, lat2, lon2) {
     if ((lat1 == lat2) && (lon1 == lon2)) {
       return 0;
@@ -90,5 +129,6 @@ function calculateDistance(lat1, lon1, lat2, lon2) {
       return dist;
     }
   }
+
 
 module.exports = app;
