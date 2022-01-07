@@ -7,8 +7,19 @@ const bodyParser = require("body-parser");
 const mongoose = require('mongoose');
 const Location = require('./models/location');
 
+
 //create server i.e initialize server
 const app = express();
+
+//Instantiate socket and COORS policy
+const io = require("socket.io")({
+  cors: {
+    origin: "http://localhost:4200",
+    methods: ["GET", "POST"],
+    allowedHeaders: ["my-custom-header"],
+    credentials: true
+  }
+});
 
 //Connect to mongoose which returns a promise
 mongoose.connect('mongodb+srv://admin:admin@cluster0.9tttj.mongodb.net/Parking?retryWrites=true&w=majority').then(() => {
@@ -33,16 +44,22 @@ app.use((req, res, next) => {
     next();
 });
 
+//Socket io listens for connection
+io.on("connection", socket => {
+     //testing if sockets are working from reacts from server  
+      console.log("One user connected");
+;});
+
+
 
 //Return data for markers
 app.get("/", (req, res, next) => {
- Location.find({}, '_id name centerX centerY numOfParkingUsed totalParkingCapacity').then(results => {
-    res.send({
-        data: results
-    });
-  });  
-});
-
+  Location.find({}, '_id name centerX centerY numOfParkingUsed totalParkingCapacity').then(results => {
+     res.send({
+         data: results
+     });
+   });  
+ });
 
 
 //Handles requests for parking
@@ -53,7 +70,7 @@ app.post("/parkRequest/:id", (req, res, next) =>{
 
   //temp has userLatitude and userLongitude
   location = req.body;
-
+  
   //use parkingID to find necessary data
   //Returns a promise so .then is used with takes a function
   var promise = new Promise((resolve, rejects) => {
@@ -61,7 +78,6 @@ app.post("/parkRequest/:id", (req, res, next) =>{
       resolve(results);
     });
   });
-
   
   //After we get the promise results
   promise.then(promiseReturned =>{
@@ -83,6 +99,7 @@ app.post("/parkRequest/:id", (req, res, next) =>{
 
         //Getting result after query is completely executed
         updatePromise.then(updated =>{
+          console.log(numOfParkingUsed, "number of parking");
           res.send({
             message: "Success",
             numOfParkingUsed: numOfParkingUsed + 1
@@ -91,15 +108,16 @@ app.post("/parkRequest/:id", (req, res, next) =>{
       }
       else{
         res.send({
-          message: "Parking Full",
+          message: "ParkingErr",
           numOfParkingUsed: numOfParkingUsed
         });
       };
     }
     else{
       //Fail condition
+      console.log("WOkring marker");
       res.send({
-        message: "Move close to a parking zone",
+        message: "LocationErr",
         numOfParkingUsed: numOfParkingUsed
       });
     }
@@ -131,4 +149,4 @@ function calculateDistance(lat1, lon1, lat2, lon2) {
   }
 
 
-module.exports = app;
+module.exports = {app, io};

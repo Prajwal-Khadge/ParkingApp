@@ -6,12 +6,11 @@
             <agm-map [latitude]="lat" [longitude]="long" [zoom]="15.9" *ngIf="flag==true">
 
                 <!--Agm-marker goes in here-->               
-                <agm-marker [latitude]="m.centerX.$numberDecimal" [longitude]="m.centerY.$numberDecimal" *ngFor="let m of markers; let i=index" (markerClick)="logLocation(m.id,i)">
+                <agm-marker [latitude]="m.centerX.$numberDecimal" [longitude]="m.centerY.$numberDecimal" *ngFor="let m of markers; let i=index" (markerClick)="logLocation(m.id)">
                     <agm-info-window [disableAutoPan]="false">
-                        {{ m.name }} {{ m.numOfParkingUsed }}/{{ m.totalParkingCapacity }}
+                        {{ m.name }} {{ m.numOfParkingUsed }}/{{ m.totalParkingCapacity }}  
                     </agm-info-window>
                 </agm-marker>
-
             </agm-map> 
         </div>
         <hr>
@@ -20,13 +19,10 @@
                 Do you want to park at {{ parkingID }}?
             </p>
         </div>
-
         <div>
             <div class="btn btn-primary" (click)="park()">Confirm parking here</div>
-            <div class="btn btn-primary">Remove Marker</div>
-        </div>
-
-        
+            <div class="btn btn-primary"(click)="hawa()">Remove Marker</div>
+        </div>       
     </div>
 </div>
 

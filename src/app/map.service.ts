@@ -1,7 +1,7 @@
 import { HttpClient, HttpClientModule } from '@angular/common/http';
 import { Injectable } from '@angular/core';
-import { Decimal128 } from 'mongoose';
 import { map, Subject } from 'rxjs';
+import { Socket } from 'socket.io-client';
 import { Location } from './location.model';
 
 @Injectable({
@@ -11,23 +11,9 @@ export class MapService {
 
   private markers: any = [];
   private markersRecieved = new Subject<Location[]>();
+  private updateParking = new Subject<any>();
 
   constructor(private http: HttpClient) { }
-
-  verifyLocation(userLatitude: Number, userLongitude: Number){
-
-    const location = {
-      lat: userLatitude,
-      lon: userLongitude
-    }
-    //Sending user location
-    this.http.post<{a: string, b: string}>("http://localhost:3000/verifyLocation", location)
-    .subscribe(result =>{
-      const a = result;
-      console.log(a);
-    });
-
-  }    
 
   //It returns an object of type string and array containing object of following type
   getMarkers(){
@@ -61,6 +47,9 @@ export class MapService {
   parkRequest(parkingID: string, userLocation: object){
     //Send parking request to server
     //For dev process
+
+    parkingID = parkingID;
+
     userLocation ={
       userLatitude: 32.52743442439571, 
       userLongitude: -92.07754440511565
@@ -70,12 +59,40 @@ export class MapService {
     //   userLatidue: 0,
     //   userLongitude: 0
     // };
+
     this.http.post<{message: string, numOfParkingUsed: number}>("http://localhost:3000/parkRequest/" + parkingID, userLocation)
     .subscribe((message) => {
-      console.log(message.message, message.numOfParkingUsed);
+      //compare message returned by server
+      if(message.message === 'Success'){
+    
+      const updatedData = {
+        id: parkingID,
+        numOfParkingUsed: message.numOfParkingUsed
+      } ;
+    
+      //Loading updated data on the observable
+      this.updateParking.next(updatedData);
+
+      }
+      else if(message.message === 'Fail'){
+        //Display parking full
+      }
+      else if(message.message === 'LocationErr'){
+        //Display move closer to a zone
+        console.log("move closer");
+      }
     });
-  }    
   }
+  
+  //Emitting observable containing array
+  getUpdatedData(){
+    return this.updateParking.asObservable();
+  }
+
+
+
+
+}
 
 
 

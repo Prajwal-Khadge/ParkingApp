@@ -1,3 +1,4 @@
+
 import { Location } from './../location.model';
 import { MapService } from './../map.service';
 import { Component, OnDestroy, OnInit } from "@angular/core";
@@ -5,9 +6,10 @@ import { AgmMap, GoogleMapsAPIWrapper, MapsAPILoader } from "@agm/core";
 import { AgmCoreModule } from '@agm/core';
 import { Variable } from "@angular/compiler/src/render3/r3_ast";
 
-import { Subscription } from 'rxjs';
+import { Subscription, map, observeOn, of } from 'rxjs';
 import { resolve } from 'dns';
 import { rejects } from 'assert';
+import { io } from 'socket.io-client';
 
 @Component({
   selector: 'app-map',
@@ -27,36 +29,57 @@ export class MapComponent implements OnInit, OnDestroy {
   markers: any =[];
   private markerSub: Subscription = new Subscription;
   parkingID: string = "";
+  private updatedData: Subscription = new Subscription;
 
-  ulmArea={
-    x1: 32.531512,  
-    y1: -92.072328,
-    x2: 32.531908,
-    y2: -92.059782
-  }
+  //Socket variables
+  private socket: any;
 
+  //Test Variables
+  
   constructor(public mapService: MapService){
 
   }
 
   ngOnInit(): void {
+    //socket initialization and COOR policy
+    this.socket = io("http://localhost:3000/", {
+      withCredentials: true,
+      extraHeaders: {
+      "my-custom-header": "abcd"
+      }
+    });
 
     //Get marker data from server  
     this.mapService.getMarkers();
 
     //Check if the async event of getting markers have finished. Returns an observable
-    this.markerSub = this.mapService.getMarkerSentListener().subscribe((marker: Location[]) => {
-      this.markers=marker;
+    let a = new Promise((resolve, rejects) => {
+      this.markerSub = this.mapService.getMarkerSentListener().subscribe((marker: Location[]) => {
+       this.markers = marker;
       });
-  }
+    });
+
+    this.updatedData = this.mapService.getUpdatedData().subscribe((data: {id: string, numOfParkingUsed: number}) => {
+      for(let element of this.markers){
+        if(element.id == data.id){
+          element.numOfParkingUsed = data.numOfParkingUsed;
+        }
+      };
+    });
+    
+  } 
 
   ngOnDestroy(): void{
     this.markerSub.unsubscribe();
   }
   //Records last clicked record
-  logLocation(_id: string, index: number){
+  logLocation(_id: string){
     this.parkingID = _id;
   }
+
+  hawa():void{
+    console.log(this.markers);
+  };
 
   //Send parking request to the server
   park(){
@@ -76,19 +99,13 @@ export class MapComponent implements OnInit, OnDestroy {
       });
     });
 
-    //Checking if async operation is completed
+    //Sending parking request
     promise.then((promiseReturned: any) =>{
-      this.mapService.parkRequest(this.parkingID, promiseReturned);
+        this.mapService.parkRequest(this.parkingID, promiseReturned);     
     });
-  }
+  };
+
+
+
   
 }
-
-
-//Verify user location
-   // const totalDistance = this.calculateDistance(this.ulmArea.x1, this.ulmArea.y1, this.ulmArea.x2, this.ulmArea.y2);
-   // const userDistance = this.calculateDistance(this.ulmArea.x1, this.ulmArea.y1, this.userLatitude, this.userLongitude);
-   
-   // if(userDistance > totalDistance){
-   //   this.flag=false;
-   // } 

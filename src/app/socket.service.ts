@@ -1,17 +1,8 @@
-import { Injectable, OnInit } from "@angular/core";
-import { Socket } from 'ngx-socket-io';
+import { Injectable } from "@angular/core";
 
 @Injectable({
     providedIn: 'root'
 })
-export class SocketService implements OnInit{
-
-    constructor(private socket: Socket){
-
-    }
-    ngOnInit(): void {
+export class SocketService {
     
-    }
-
 }
-

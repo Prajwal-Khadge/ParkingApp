@@ -9,7 +9,7 @@ import { fromEventPattern } from 'rxjs';
 import { AgmCoreModule } from '@agm/core';
 import { SocketIoConfig, SocketIoModule } from 'ngx-socket-io';
 
-const config: SocketIoConfig = {url: 'http://localhost:3000', options: {}};
+//const config: SocketIoConfig = {url: 'http://localhost:3000', options: {}};
 
 @NgModule({
   declarations: [
@@ -20,7 +20,7 @@ const config: SocketIoConfig = {url: 'http://localhost:3000', options: {}};
   imports: [
     BrowserModule,
     HttpClientModule,
-    SocketIoModule,
+    //SocketIoModule,
     AgmCoreModule.forRoot({
       apiKey: 'AIzaSyA84HPzgNU3diTHdoJzb33Q4iOppgWLYr4',
       libraries: ['places']
